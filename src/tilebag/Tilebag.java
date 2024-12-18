@@ -8,17 +8,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import jade.core.Agent;
+import jade.core.behaviours.*;
+import jade.lang.acl.ACLMessage;
+
 import tile.Tile;
 
-public class Tilebag {
-    private final List<Tile> tiles;
-    private final Random random;
-    
-    public Tilebag(){
-        tiles = new ArrayList<>();
-        random = new Random();
-        initializeBag();
-    }
+public class Tilebag extends Agent {
+    private final List<Tile> tiles = new ArrayList<>();
+    private final Random random = new Random();
     
     private void initializeBag(){
         addTiles('A', 1, 9);  // Letter A, 1 point, 9 tiles
@@ -65,11 +63,44 @@ public class Tilebag {
         return tiles.remove(randNum);
     }
     
+    public List<Tile> getTiles(int num) {
+        List<Tile> list = new ArrayList<>();
+        for (int i = 0; i < num; i++) {
+            list.add(getTile());
+        }
+        return list;
+    }
+    
     public boolean isEmpty(){
         return tiles.isEmpty();
     }
     
     public int getTilebagSize(){
         return tiles.size();
+    }
+    
+    public void setup(){
+        initializeBag();
+        
+        addBehaviour(new CyclicBehaviour() {
+            public void action(){
+                ACLMessage msg = receive();
+                if(msg != null){
+                    if(msg.getPerformative() == ACLMessage.REQUEST && msg.getOntology().equals("DRAW")){
+                        int numTiles = Integer.parseInt(msg.getContent());
+                        List<Tile> drawnTiles = getTiles(numTiles);
+                        
+                        //respond to the player with the tiles
+                        for (Tile tile: drawnTiles){
+                            ACLMessage reply = msg.createReply();
+                            reply.setPerformative(ACLMessage.INFORM);
+                            reply.setOntology("TILE");
+                            reply.setContent(tile.getLetter()+""+tile.getPoints());
+                            send(reply);
+                        }
+                    }
+                }
+            }
+        });
     }
 }

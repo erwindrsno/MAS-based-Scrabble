@@ -1,10 +1,15 @@
 package dictionary;
 
+import jade.core.AID;
 import java.net.URL;
 
 import javax.net.ssl.HttpsURLConnection;
 
-public class DictionaryService{
+import jade.core.Agent;
+import jade.core.behaviours.CyclicBehaviour;
+import jade.lang.acl.ACLMessage;
+
+public class DictionaryService extends Agent{
     private String api = "https://api.dictionaryapi.dev/api/v2/entries/en/";
     private final String REQUEST_METHOD = "GET";
 
@@ -38,12 +43,34 @@ public class DictionaryService{
                 throw new Exception("Error: could not fetch API data");
             }
         } catch(Exception e){
-            System.out.println(e.getMessage());
+            System.out.println("Error at : " + e.getMessage());
         }
         return false;
     }
 
     public String getUrl(String word){
         return api + word;
+    }
+    
+    protected void setup(){
+        System.out.println("Dictionary service is up");
+        
+        addBehaviour(new CyclicBehaviour() {
+            public void action(){
+                ACLMessage msg = receive();
+                if(msg != null){
+                    if(msg.getPerformative() == ACLMessage.REQUEST && msg.getOntology().equals("VALIDATE")){
+                        System.out.println("Validating : " + msg.getContent());
+                        boolean isValid = checkValid(msg.getContent());
+                        
+                        ACLMessage reply = msg.createReply();
+                        reply.setPerformative(ACLMessage.INFORM);
+                        reply.setOntology("VALIDATION");
+                        reply.setContent(isValid+"");
+                        send(reply);
+                    }
+                }
+            }
+        });
     }
 }
