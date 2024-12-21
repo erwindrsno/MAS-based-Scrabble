@@ -28,13 +28,6 @@ public class DictionaryService extends Agent{
             int responseCode = conn.getResponseCode();
 
             if(responseCode == 200){
-                // BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                // String inputLine;
-                // StringBuilder response = new StringBuilder();
-                // while ((inputLine = in.readLine()) != null) {
-                //     response.append(inputLine);
-                // }
-                // in.close();
                 return true;
             } else if (responseCode == 404){
                 // System.out.println("detected not valid");

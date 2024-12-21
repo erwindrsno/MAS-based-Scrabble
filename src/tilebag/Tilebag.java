@@ -80,25 +80,31 @@ public class Tilebag extends Agent {
     }
     
     public void setup(){
+        System.out.println("Tile bag agent is up");
         initializeBag();
         
         addBehaviour(new CyclicBehaviour() {
             public void action(){
                 ACLMessage msg = receive();
                 if(msg != null){
-                    if(msg.getPerformative() == ACLMessage.REQUEST && msg.getOntology().equals("DRAW")){
-                        int numTiles = Integer.parseInt(msg.getContent());
-                        List<Tile> drawnTiles = getTiles(numTiles);
-                        
-                        //respond to the player with the tiles
-                        for (Tile tile: drawnTiles){
-                            ACLMessage reply = msg.createReply();
-                            reply.setPerformative(ACLMessage.INFORM);
-                            reply.setOntology("TILE");
-                            reply.setContent(tile.getLetter()+""+tile.getPoints());
-                            send(reply);
+                    if(msg.getPerformative() == ACLMessage.REQUEST){
+                        if(msg.getOntology().equals("DRAW")){
+                            int numTiles = Integer.parseInt(msg.getContent());
+                            List<Tile> drawnTiles = getTiles(numTiles);
+
+                            //respond to the player with the tiles
+                            for (Tile tile: drawnTiles){
+                                ACLMessage reply = msg.createReply();
+                                reply.setPerformative(ACLMessage.INFORM);
+                                reply.setOntology("TILE");
+                                reply.setContent(tile.getLetter()+""+tile.getPoints());
+                                send(reply);
+                            }
                         }
                     }
+                }
+                else{
+                    block();
                 }
             }
         });

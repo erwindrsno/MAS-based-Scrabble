@@ -9,17 +9,23 @@ import jade.core.behaviours.*;
 import jade.lang.acl.ACLMessage;
 import jade.core.AID;
 
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
+import java.util.ArrayList;
 
 import dictionary.DictionaryService;
+import player.Player;
 
 public class GameMaster extends Agent{
     private List<AID> players = new ArrayList<>();
-    private final int REQUIRED_PLAYERS = 2; // Number of players to wait for
+//    private List<MappedPlayer> players = new ArrayList<>();
+//    private Map<AID,Player> players = new HashMap<>();
+    private final int REQUIRED_PLAYERS = 4; // Number of players to wait for
     
     private int currentPlayerIndex = 0;
-    private int firstTurnIndex = 0;
+    
+    private int playerID = 1;
     
     private DictionaryService ds = new DictionaryService();
     
@@ -34,6 +40,7 @@ public class GameMaster extends Agent{
                     // Add the player to the set if not already present
                     if (players.add(sender)) {
                         System.out.println(sender.getLocalName() + " has joined the game. (" + players.size() + "/" + REQUIRED_PLAYERS + ")");
+                        playerID++;
                     } else {
                         System.out.println(sender.getLocalName() + " has joined.");
                     }
@@ -71,13 +78,13 @@ public class GameMaster extends Agent{
         AID currentPlayer = players.get(currentPlayerIndex);
         System.out.println("It's " + currentPlayer.getLocalName() + "'s turn!");
 
-        ACLMessage showBoardMsg = new ACLMessage(ACLMessage.REQUEST);
-        showBoardMsg.addReceiver(new AID("Board", AID.ISLOCALNAME));
-        showBoardMsg.setOntology("SHOW");
-        send(showBoardMsg);
+//        ACLMessage showBoardMsg = new ACLMessage(ACLMessage.REQUEST);
+//        showBoardMsg.addReceiver(new AID("Board", AID.ISLOCALNAME));
+//        showBoardMsg.setOntology("SHOW");
+//        send(showBoardMsg);
         
         // Wait for a response from the Board agent
-        ACLMessage boardResponse = blockingReceive(); // Blocks until a message is received
+//        ACLMessage boardResponse = blockingReceive(); // Blocks until a message is received
         
         // Send a message to the current player to start their turn
         ACLMessage turnMessage = new ACLMessage(ACLMessage.REQUEST);
@@ -88,9 +95,20 @@ public class GameMaster extends Agent{
         addBehaviour(new CyclicBehaviour() {
             public void action() {
                 ACLMessage msg = receive(); // Wait for the player to respond
-                if(msg != null && (msg.getPerformative() == ACLMessage.REQUEST) && msg.getOntology().equals("TURN")){
-                    currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
-                    startTurnCycle();  // Start the next player's turn
+                if(msg != null){
+                    if(msg.getPerformative() == ACLMessage.REQUEST){
+                        if(msg.getOntology().equals("TURN")){
+                            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+                            startTurnCycle();  // Start the next player's turn
+                        }
+                        else if(msg.getOntology().equals("SCORE")){
+                            ACLMessage addScoreMsg = new ACLMessage(ACLMessage.REQUEST);
+                            addScoreMsg.addReceiver(currentPlayer);
+                            addScoreMsg.setOntology("SCORE");
+                            addScoreMsg.setContent(msg.getContent());
+                            send(addScoreMsg);
+                        }
+                    }
                 }
                 else{
                     block();
